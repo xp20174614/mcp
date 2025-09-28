@@ -1,49 +1,42 @@
-# GLM-4 5B base model example
-# This file demonstrates basic GLM-4 5B model usage
+import os
+import sys
+sys.path.append("C:\\secret")
 
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from dotenv import load_dotenv
+load_dotenv()
 
-class GLM4BaseExample:
-    """GLM-4 5B base model example class"""
+# 使用智谱AI的官方SDK
+from zhipuai import ZhipuAI
+
+def test_glm45():
+    """测试GLM-4.5模型"""
     
-    def __init__(self, model_name="THUDM/glm-4-5b"):
-        self.model_name = model_name
-        self.tokenizer = None
-        self.model = None
+    # 初始化智谱AI客户端
+    client = ZhipuAI(api_key=os.getenv("ZAI_API_KEY"))
     
-    def load_model(self):
-        """Load the GLM-4 model and tokenizer"""
-        try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name, 
-                torch_dtype=torch.float16,
-                device_map="auto",
-                trust_remote_code=True
-            )
-            print(f"Model {self.model_name} loaded successfully")
-        except Exception as e:
-            print(f"Error loading model: {e}")
+    # 创建对话消息
+    messages = [
+        {"role": "system", "content": "你是一个有用的AI助手"},
+        {"role": "user", "content": "请介绍一下人工智能的发展历程"}
+    ]
     
-    def generate_text(self, prompt, max_length=100):
-        """Generate text using the model"""
-        if not self.model or not self.tokenizer:
-            self.load_model()
+    try:
+        # 调用GLM-4.5模型
+        response = client.chat.completions.create(
+            model="glm-4",  # GLM-4是最新版本
+            messages=messages,
+            temperature=0.7
+        )
         
-        inputs = self.tokenizer(prompt, return_tensors="pt")
-        with torch.no_grad():
-            outputs = self.model.generate(
-                inputs.input_ids,
-                max_length=max_length,
-                temperature=0.7,
-                do_sample=True
-            )
+        print("=== GLM-4.5 响应 ===")
+        print(response.choices[0].message.content)
         
-        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return generated_text
+    except Exception as e:
+        print(f"API调用失败: {e}")
+        print("请检查：")
+        print("1. ZAI_API_KEY环境变量是否设置正确")
+        print("2. 网络连接是否正常")
+        print("3. API密钥是否有有效权限")
 
 if __name__ == "__main__":
-    example = GLM4BaseExample()
-    result = example.generate_text("Hello, how are you?")
-    print("Generated text:", result)
+    test_glm45()
