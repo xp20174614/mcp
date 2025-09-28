@@ -1,59 +1,47 @@
-# Agent with self-defined tools example
-# This file demonstrates how to create agents with custom tools
+import os
+from langchain.tools import tool
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain import hub
+from langchain_openai import ChatOpenAI
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-from typing import List, Dict, Any
-import json
+# 设置环境变量
+ZAI_API_KEY= os.getenv("ZAI_API_KEY")
 
-class CustomTool:
-    """Base class for custom tools"""
-    
-    def __init__(self, name: str, description: str):
-        self.name = name
-        self.description = description
-    
-    def execute(self, *args, **kwargs) -> Any:
-        """Execute the tool - to be implemented by subclasses"""
-        raise NotImplementedError("Subclasses must implement execute method")
+@tool
+def get_weather(city: str) -> str:
+    """获取指定城市的天气信息"""
+    # 这里应该调用真实的天气 API
+    # 示例返回
+    return f"{city} 的天气：晴天，温度 25°C，湿度 60%"
 
-class CalculatorTool(CustomTool):
-    """Calculator tool for basic arithmetic operations"""
-    
-    def __init__(self):
-        super().__init__("calculator", "Perform basic arithmetic calculations")
-    
-    def execute(self, operation: str, a: float, b: float) -> float:
-        """Execute arithmetic operation"""
-        operations = {
-            'add': lambda x, y: x + y,
-            'subtract': lambda x, y: x - y,
-            'multiply': lambda x, y: x * y,
-            'divide': lambda x, y: x / y if y != 0 else float('inf')
-        }
-        
-        if operation not in operations:
-            raise ValueError(f"Unsupported operation: {operation}")
-        
-        return operations[operation](a, b)
+@tool
+def get_stock_price(symbol):
+    """获取股票价格"""
+    # 模拟股票 API 调用
+    return {
+        "symbol": symbol,
+        "price": 150.25,
+        "change": "+2.5%"
+    }
 
-class AgentWithTools:
-    """Agent that can use custom tools"""
-    
-    def __init__(self):
-        self.tools: Dict[str, CustomTool] = {}
-        self.register_tool(CalculatorTool())
-    
-    def register_tool(self, tool: CustomTool):
-        """Register a new tool"""
-        self.tools[tool.name] = tool
-    
-    def use_tool(self, tool_name: str, *args, **kwargs) -> Any:
-        """Use a registered tool"""
-        if tool_name not in self.tools:
-            raise ValueError(f"Tool '{tool_name}' not found")
-        
-        return self.tools[tool_name].execute(*args, **kwargs)
+# 创建 LLM
+llm = ChatOpenAI(
+    model="glm-4-plus",
+    openai_api_key=ZAI_API_KEY,
+    openai_api_base="https://open.bigmodel.cn/api/paas/v4/",
+)
 
-if __name__ == "__main__":
-    agent = AgentWithTools()
-    result = agent.use_tool("calculator", "add", 5, 3)
-    print(f"5 + 3 = {result}")
+# 工具列表
+tools = [get_weather, get_stock_price]
+
+# 创建代理
+prompt = hub.pull("hwchase17/react")
+agent = create_react_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
+
+# 使用代理
+result = agent_executor.invoke({"input": "北京今天天气怎么样？然后帮我查询股票价格，股票代码是 000001"})
+print(result['output'])
