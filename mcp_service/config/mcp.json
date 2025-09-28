@@ -1,0 +1,25 @@
+{
+  "service_name": "agent_service",
+  "version": "1.0.0",
+  "description": "LangChain Agent as MCP Service",
+  "entry_point": "services/agent_service.py",
+  "runtime": {
+    "language": "python",
+    "version": "3.9"
+  },
+  "apis": [
+    {
+      "name": "query",
+      "description": "Process natural language query",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "User input text"
+          }
+        }
+      }
+    }
+  ]
+}

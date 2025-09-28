@@ -32,6 +32,7 @@ llm = ChatOpenAI(
     model="glm-4-plus",
     openai_api_key=ZAI_API_KEY,
     openai_api_base="https://open.bigmodel.cn/api/paas/v4/",
+    streaming=True,
 )
 
 # 工具列表
